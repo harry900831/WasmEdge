@@ -22,7 +22,6 @@
 #include <shared_mutex>
 #include <string>
 #include <string_view>
-#include <thread>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -44,8 +43,7 @@ public:
   ~Environ() noexcept;
 
   void init(Span<const std::string> Dirs, std::string ProgramName,
-            Span<const std::string> Args, Span<const std::string> Envs,
-            WasmEdge::VM::VM *VM = nullptr);
+            Span<const std::string> Args, Span<const std::string> Envs);
 
   void fini() noexcept;
 
@@ -77,32 +75,6 @@ public:
   }
 
   constexpr __wasi_exitcode_t getExitCode() const noexcept { return ExitCode; }
-
-  WasiExpect<void>
-  pthreadCreate([[maybe_unused]] __wasi_thread_t *WasiThreadPtr,
-                uint32_t WasiThreadFunc, uint32_t Arg) const noexcept {
-
-    if (unlikely(!VM)) {
-      return WasiUnexpect(__WASI_ERRNO_BADF);
-    } else {
-      auto ThreadTunc = [&]() {
-        VM->createThreadWithFunctionAddress(WasiThreadFunc, Arg);
-      };
-      [[maybe_unused]] pthread_t *ThreadPtr =
-          static_cast<pthread_t *>(WasiThreadPtr);
-      std::thread T(ThreadTunc);
-      T.join();
-    }
-
-    return {};
-  }
-
-  WasiExpect<void> pthreadJoin(__wasi_thread_t WasiThread,
-                               void **WasiRetval) const noexcept {
-    __wasi_thread_t Thread = static_cast<__wasi_thread_t>(WasiThread);
-    pthread_join(Thread, WasiRetval);
-    return {};
-  }
 
   /// Read command-line argument data.
   ///
@@ -1119,7 +1091,6 @@ private:
   std::vector<std::string> EnvironVariables;
   VFS FS;
   __wasi_exitcode_t ExitCode = 0;
-  WasmEdge::VM::VM *VM = nullptr;
 
   mutable std::shared_mutex FdMutex; ///< Protect FdMap
   std::unordered_map<__wasi_fd_t, std::shared_ptr<VINode>> FdMap;
