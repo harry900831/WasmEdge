@@ -403,6 +403,7 @@ protected:
   void linkStore(StoreManager *Store, BeforeModuleDestroyCallback Callback) {
     // Link to store when registration.
     std::unique_lock Lock(Mutex);
+    // segmentation fault occured at the next line with EXC_BAD_ACCESS
     LinkedStore.insert_or_assign(Store, Callback);
   }
 
@@ -434,6 +435,8 @@ protected:
   std::vector<FunctionInstance *> FuncInsts;
   std::vector<TableInstance *> TabInsts;
   std::vector<MemoryInstance *> MemInsts;
+  // Declare it over here
+  std::vector<int*> meow;
   std::vector<GlobalInstance *> GlobInsts;
   std::vector<ElementInstance *> ElemInsts;
   std::vector<DataInstance *> DataInsts;
@@ -453,6 +456,8 @@ protected:
   /// Linked store.
   std::map<StoreManager *, std::function<BeforeModuleDestroyCallback>>
       LinkedStore;
+  // If I declare it over here, then it won't trigger segmentation fault
+  // std::vector<int*> meow;
 };
 
 } // namespace Instance

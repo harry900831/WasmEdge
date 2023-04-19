@@ -72,10 +72,12 @@ void VM::unsafeLoadPlugInHosts() {
   using namespace std::literals::string_view_literals;
   PlugInModInsts.clear();
 
+  // Registering the below two modules is fine
   PlugInModInsts.push_back(
       createPluginModule<Host::WasiNNModuleMock>("wasi_nn"sv, "wasi_nn"sv));
   PlugInModInsts.push_back(createPluginModule<Host::WasiCryptoCommonModuleMock>(
       "wasi_crypto"sv, "wasi_crypto_common"sv));
+  // The segmentation fault occur when registering the following modules
   PlugInModInsts.push_back(
       createPluginModule<Host::WasiCryptoAsymmetricCommonModuleMock>(
           "wasi_crypto"sv, "wasi_crypto_asymmetric_common"sv));
@@ -119,6 +121,7 @@ void VM::unsafeRegisterBuiltInHosts() {
 void VM::unsafeRegisterPlugInHosts() {
   // Register all created module instances from plugins.
   for (auto &It : PlugInModInsts) {
+    spdlog::info("registering {}", (It.get())->getModuleName());
     ExecutorEngine.registerModule(StoreRef, *(It.get()));
   }
 }
